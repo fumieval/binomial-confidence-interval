@@ -8,12 +8,12 @@ module Main where
 import Control.Monad
 import Data.List (intercalate)
 import Data.Number.Erf
-import Data.Random
+import Data.Random (RVar, runRVar, uniform)
 import Data.Random.Distribution.Binomial (binomial)
 import Statistics.Distribution (quantile, complQuantile)
 import Statistics.Distribution.Beta (betaDistr)
-import System.Random.Stateful
-import System.Environment
+import System.Random.Stateful (initStdGen, newIOGenM)
+import System.Environment (getArgs)
 
 type Formula = Double -> Int -> Int -> (Double, Double)
 
@@ -88,7 +88,7 @@ data Session = Session
 
 sessionR :: Formula -> Double -> Double -> RVar Session
 sessionR func zScore prob = do
-  numTrials <- Data.Random.uniform 1 1000
+  numTrials <- uniform 1 1000
   numSuccess <- binomial (numTrials :: Int) prob
   let (lower, upper) = func zScore numSuccess numTrials
   pure Session {
@@ -136,7 +136,7 @@ main = getArgs >>= \case
     replicateM_ 1000 $ do
       forM_ algorithms $ \(name, func) -> do
         (prob, Session{..}) <- runR $ do
-          prob <- Data.Random.uniform 0 1
+          prob <- uniform 0 1
           session <- sessionR func 1.96 prob
           pure (prob, session)
         putStrLn $ intercalate "," [name, show prob, show numTrials, show numSuccess, show $ upper - lower]
